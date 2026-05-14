@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}CertEn – Enrollment Form{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-header__title">Enrollment Form</h2>
+</div>
+
+<div class="enroll-wrapper">
+  <form action="{{ url_for('register_submit') }}" method="POST" class="enroll-form">
+
+    <!-- ── Personal Details ───────────────── -->
+    <div class="enroll-card">
+      <h3 class="enroll-card__title">Personal Details</h3>
+
+      <div class="field-group">
+        <label class="field-label">First Name</label>
+        <input type="text" name="first_name" class="field-input" placeholder="Enter your First Name" required />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Last Name</label>
+        <input type="text" name="last_name" class="field-input" placeholder="Enter your Last Name" required />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Date of Birth</label>
+        <div class="date-selects">
+          <select name="dob_day" class="field-select">
+            <option value="">Day</option>
+            {% for d in range(1, 32) %}
+              <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+          </select>
+          <select name="dob_month" class="field-select">
+            <option value="">Month</option>
+            {% for m in ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+              <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+          <select name="dob_year" class="field-select">
+            <option value="">Year</option>
+            {% for y in range(2010, 1949, -1) %}
+              <option value="{{ y }}">{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email</label>
+        <input type="email" name="email" class="field-input" placeholder="Enter your Email" required />
+      </div>
+    </div>
+
+    <!-- ── Program Details ────────────────── -->
+    <div class="enroll-card">
+      <h3 class="enroll-card__title">Program Details</h3>
+
+      <div class="field-group">
+        <label class="field-label">Program</label>
+        <select name="program" class="field-select field-select--full">
+          <option value="">Not Selected</option>
+          {% for p in programs %}
+            <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Mode</label>
+        <select name="mode" class="field-select field-select--full">
+          <option value="">Not Selected</option>
+          {% for m in modes %}
+            <option value="{{ m }}">{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Date</label>
+        <div class="date-selects">
+          <select name="date_day" class="field-select">
+            <option value="">Day</option>
+            {% for d in range(1, 32) %}
+              <option value="{{ d }}">{{ d }}</option>
+            {% endfor %}
+          </select>
+          <select name="date_month" class="field-select">
+            <option value="">Month</option>
+            {% for m in ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+              <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+          <select name="date_year" class="field-select">
+            <option value="">Year</option>
+            {% for y in range(2030, 2024, -1) %}
+              <option value="{{ y }}">{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Time slot</label>
+        <div class="timeslot">
+          <span class="timeslot__label">From</span>
+          <select name="time_from_h" class="field-select field-select--sm">
+            {% for h in range(0, 13) %}<option>{{ "%02d"|format(h) }}</option>{% endfor %}
+          </select>
+          <span class="timeslot__sep">:</span>
+          <select name="time_from_m" class="field-select field-select--sm">
+            {% for m in range(0, 60, 15) %}<option>{{ "%02d"|format(m) }}</option>{% endfor %}
+          </select>
+          <select name="time_from_ampm" class="field-select field-select--xs">
+            <option>AM</option><option>PM</option>
+          </select>
+        </div>
+        <div class="timeslot">
+          <span class="timeslot__label">To</span>
+          <select name="time_to_h" class="field-select field-select--sm">
+            {% for h in range(0, 13) %}<option>{{ "%02d"|format(h) }}</option>{% endfor %}
+          </select>
+          <span class="timeslot__sep">:</span>
+          <select name="time_to_m" class="field-select field-select--sm">
+            {% for m in range(0, 60, 15) %}<option>{{ "%02d"|format(m) }}</option>{% endfor %}
+          </select>
+          <select name="time_to_ampm" class="field-select field-select--xs">
+            <option>AM</option><option>PM</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<!-- Full-width submit button -->
+<div class="enroll-submit-wrapper">
+  <button type="submit" form="enroll-form-id" class="btn btn--enroll"
+    onclick="document.querySelector('.enroll-form').submit()">
+    Complete Enrollment
+  </button>
+</div>
+{% endblock %}

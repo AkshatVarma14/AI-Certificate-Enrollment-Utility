@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}CertEn – My Dashboard{% endblock %}
+
+{% block nav_links %}
+  <a href="{{ url_for('user_dashboard') }}" class="navbar__link navbar__link--active">Dashboard</a>
+  <a href="{{ url_for('index') }}" class="navbar__link">Home</a>
+  <a href="{{ url_for('signout') }}" class="navbar__link">Sign Out</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-header__title">Dashboard</h2>
+</div>
+
+<!-- ── Stat Cards ─────────────────────────────── -->
+<div class="stats-grid stats-grid--three">
+  <div class="stat-card">
+    <p class="stat-card__label">Programs Enrolled</p>
+    <p class="stat-card__value">{{ stats.programs_enrolled }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-card__label">Programs Completed</p>
+    <p class="stat-card__value">{{ stats.programs_completed }}</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-card__label">Programs Remaining</p>
+    <p class="stat-card__value">{{ stats.programs_remaining }}</p>
+  </div>
+</div>
+
+<!-- ── Detail Panel ───────────────────────────── -->
+<div class="lists-grid">
+  <!-- Program list -->
+  <div class="list-card">
+    <h3 class="list-card__title">Program Details</h3>
+    <ul class="list-card__list">
+      {% for prog in enrolled_programs %}
+        <li class="list-card__item {% if selected_program and selected_program.id == prog.id %}list-card__item--active{% endif %}">
+          <a href="{{ url_for('user_dashboard', program_id=prog.id) }}" class="list-card__link">
+            {{ prog.name }}
+            <span class="list-card__arrow">›</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Task table -->
+  <div class="list-card list-card--wide">
+    <h3 class="list-card__title">Task Details</h3>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th>Serial</th>
+          <th>Task Name</th>
+          <th>Due Date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+          <tr>
+            <td>{{ task.serial }}</td>
+            <td>{{ task.name }}</td>
+            <td>{{ task.due_date }}</td>
+            <td class="task-table__status task-table__status--{{ task.status | lower }}">{{ task.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form action="{{ url_for('apply_certificate') }}" method="POST" class="cert-form">
+      <input type="hidden" name="program_id" value="{{ selected_program.id if selected_program else 1 }}" />
+      <button type="submit" class="btn btn--cert">Apply for Certificate</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

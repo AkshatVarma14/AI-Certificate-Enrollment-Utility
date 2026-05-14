@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}CertEn – Certificate Enrollment{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <!-- ── Left Column ─────────────────────── -->
+  <div class="hero__left">
+    <h1 class="hero__title">Certificate<br>Enrollment</h1>
+    <p class="hero__subtitle">Complete your training programs and earn recognised certificates with CertEn.</p>
+
+    <div class="signin-box">
+      <form action="{{ url_for('signin') }}" method="POST" class="signin-form">
+        <input
+          type="email"
+          name="email"
+          class="signin-form__input"
+          placeholder="Email"
+          required
+          autocomplete="email"
+        />
+        <button type="submit" class="btn btn--primary signin-form__btn">Sign In</button>
+      </form>
+      <a href="{{ url_for('register') }}" class="signin-form__register-link">
+        Not Registered yet? Register now
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Right Column – Certificate Preview ─ -->
+  <div class="hero__right">
+    <div class="cert-preview">
+      <div class="cert-preview__corner cert-preview__corner--tl"></div>
+      <div class="cert-preview__corner cert-preview__corner--br"></div>
+      <div class="cert-preview__ribbon cert-preview__ribbon--tr"></div>
+      <div class="cert-preview__ribbon cert-preview__ribbon--bl"></div>
+
+      <div class="cert-preview__inner">
+        <p class="cert-preview__label">C E R T I F I C A T E</p>
+        <p class="cert-preview__sublabel">— OF ACHIEVEMENT —</p>
+        <div class="cert-preview__ornament">❧</div>
+        <p class="cert-preview__certify">This is to certify that</p>
+        <div class="cert-preview__name-line"></div>
+        <p class="cert-preview__body">
+          has successfully completed<br>the required training and assessment.
+        </p>
+        <div class="cert-preview__footer">
+          <div class="cert-preview__sig">
+            <div class="cert-preview__sig-line"></div>
+            <span>DATE</span>
+          </div>
+          <div class="cert-preview__sig">
+            <div class="cert-preview__sig-line"></div>
+            <span>SIGNATURE</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
