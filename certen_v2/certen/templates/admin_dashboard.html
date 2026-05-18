@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}CertEn – Admin Dashboard{% endblock %}
+
+{% block nav_links %}
+  <a href="#" class="text-sm font-medium text-primary underline underline-offset-4">Option 1</a>
+  <a href="#" class="text-sm font-medium text-gray-600 hover:text-primary hover:underline hover:underline-offset-4 transition-colors">Option 1</a>
+  <a href="#" class="text-sm font-medium text-gray-600 hover:text-primary hover:underline hover:underline-offset-4 transition-colors">Option 1</a>
+  <a href="{{ url_for('signout') }}" class="text-sm font-medium text-gray-600 hover:text-primary hover:underline hover:underline-offset-4 transition-colors">Sign Out</a>
+{% endblock %}
+
+{% block mobile_nav_links %}
+  <a href="#" class="text-sm font-medium text-primary underline underline-offset-4">Option 1</a>
+  <a href="#" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Option 1</a>
+  <a href="#" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Option 1</a>
+  <a href="{{ url_for('signout') }}" class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">Sign Out</a>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+  <!-- Page heading -->
+  <h2 class="font-serif text-3xl text-center text-gray-900">Dashboard</h2>
+
+  <!-- ── Stat Cards ────────────────────────────────────────────── -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% set cards = [
+      ('Total Users',          stats.total_users),
+      ('Total Programs',       stats.total_programs),
+      ('Certificates Granted', stats.certificates_granted),
+      ('Tasks Assigned',       stats.tasks_assigned),
+    ] %}
+    {% for label, value in cards %}
+    <div class="bg-primary text-white rounded-2xl p-5 shadow-sm">
+      <p class="text-sm font-medium opacity-90 mb-1">{{ label }}</p>
+      <p class="text-4xl font-bold leading-none">{{ value }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── Users & Programs Lists ───────────────────────────────── -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+    <!-- Users -->
+    <div class="bg-white rounded-2xl shadow-sm border-l-4 border-primary p-6">
+      <h3 class="text-lg font-bold text-primary mb-4">Users</h3>
+      <ul class="divide-y divide-gray-100">
+        {% for user in users %}
+        <li class="{% if selected_user and selected_user.id == user.id %}font-bold text-primary border-b-2 border-primary{% endif %}">
+          <a href="{{ url_for('admin_dashboard', user_id=user.id) }}"
+             class="flex justify-between items-center py-3 px-1 text-gray-800 hover:text-primary transition-colors">
+            {{ user.name }}
+            <span class="text-gray-400 text-lg">›</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Programs -->
+    <div class="bg-white rounded-2xl shadow-sm border-l-4 border-primary p-6">
+      <h3 class="text-lg font-bold text-primary mb-4">Programs</h3>
+      <ul class="divide-y divide-gray-100">
+        {% for program in programs %}
+        <li class="{% if selected_program and selected_program.id == program.id %}font-bold text-primary border-b-2 border-primary{% endif %}">
+          <a href="{{ url_for('admin_dashboard', program_id=program.id, user_id=selected_user.id if selected_user else '') }}"
+             class="flex justify-between items-center py-3 px-1 text-gray-800 hover:text-primary transition-colors">
+            {{ program.name }}
+            <span class="text-gray-400 text-lg">›</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── User Detail Panel ─────────────────────────────────────── -->
+  {% if selected_user %}
+  <div class="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+
+    <!-- Profile row -->
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-full bg-navy text-white flex items-center justify-center font-bold text-base shrink-0">
+        {{ selected_user.initials }}
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-navy">{{ selected_user.name }}</h3>
+        <p class="text-sm text-primary">{{ selected_user.email }}</p>
+      </div>
+    </div>
+
+    <!-- Body: enrolled programs + task table -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-gray-100 pt-6">
+
+      <!-- Enrolled programs mini list -->
+      <div>
+        <h4 class="font-bold text-navy mb-4">Programs Enrolled</h4>
+        <div class="space-y-3">
+          {% for program in programs[:3] %}
+          <div class="flex items-center gap-2 text-sm">
+            <span class="text-gray-600 w-20 shrink-0">{{ program.name }}</span>
+            <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div class="prog-fill h-full" style="width:50%"></div>
+            </div>
+            <span class="text-gray-500 w-9 text-right shrink-0">50%</span>
+            <a href="{{ url_for('admin_dashboard', user_id=selected_user.id, program_id=program.id) }}"
+               class="text-gray-400 hover:text-primary text-lg ml-1 transition-colors">›</a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Task table -->
+      {% if selected_program %}
+      <div>
+        <h4 class="font-bold text-navy mb-4">Program Details</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200">
+                <th class="text-left py-2 px-2 font-bold text-gray-800">Serial</th>
+                <th class="text-left py-2 px-2 font-bold text-gray-800">Task Name</th>
+                <th class="text-left py-2 px-2 font-bold text-gray-800">Due Date</th>
+                <th class="text-left py-2 px-2 font-bold text-gray-800">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for task in tasks %}
+              <tr class="border-b border-gray-50">
+                <td class="py-3 px-2 text-gray-600">{{ task.serial }}</td>
+                <td class="py-3 px-2 text-gray-600">{{ task.name }}</td>
+                <td class="py-3 px-2 text-gray-600">{{ task.due_date }}</td>
+                <td class="py-3 px-2 status-{{ task.status | lower }}">{{ task.status }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <form action="{{ url_for('grant_certificate') }}" method="POST" class="flex justify-end mt-4">
+          <input type="hidden" name="user_id"    value="{{ selected_user.id }}" />
+          <input type="hidden" name="program_id" value="{{ selected_program.id }}" />
+          <button type="submit"
+                  class="bg-gray-300 text-gray-600 font-semibold rounded-full px-6 py-2 text-sm hover:bg-primary hover:text-white transition-colors">
+            Grant Certificate
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
