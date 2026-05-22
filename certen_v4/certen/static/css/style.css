@@ -1,0 +1,16 @@
+/* CertEn – style.css
+   Tailwind handles 99% of styling.
+   These rules cover only dynamic Jinja-generated class names
+   that Tailwind's JIT cannot detect at build time.
+*/
+
+/* Task status colours (used via status-c / status-nc classes) */
+.status-c  { color: #22C55E; font-weight: 700; }
+.status-nc { color: #EF4444; font-weight: 700; }
+
+/* Progress bar fill (width set inline via Jinja) */
+.prog-fill {
+  background-color: #2563EB;
+  height: 4px;
+  border-radius: 9999px;
+}
