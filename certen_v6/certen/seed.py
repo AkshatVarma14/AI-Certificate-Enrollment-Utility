@@ -1,5 +1,5 @@
 """
-seed.py – Fill the CertEn database with sample data.
+seed.py – Populate the CertEn database with sample data.
 Run once:  python seed.py
 """
 from app import app

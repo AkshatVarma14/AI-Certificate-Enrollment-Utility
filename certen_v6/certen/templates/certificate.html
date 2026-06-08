@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Certificate – {{ user.full_name }} · {{ program.name }}{% endblock %}
+
+{# ── Navbar: Back + Print only ──────────────────────────────── #}
+{% block nav_links %}
+  <a href="javascript:history.back()"
+     class="text-sm font-medium text-gray-600 hover:text-primary hover:underline hover:underline-offset-4 transition-colors">
+    ← Back
+  </a>
+  <button onclick="window.print()"
+          class="text-sm font-medium text-gray-600 hover:text-primary hover:underline hover:underline-offset-4 transition-colors bg-transparent border-none cursor-pointer">
+    🖨 Print / Save PDF
+  </button>
+{% endblock %}
+{% block mobile_nav_links %}
+  <a href="javascript:history.back()"
+     class="text-sm font-medium text-gray-600 hover:text-primary transition-colors">← Back</a>
+  <button onclick="window.print()"
+          class="text-sm font-medium text-gray-600 hover:text-primary transition-colors bg-transparent border-none cursor-pointer text-left">
+    🖨 Print / Save PDF
+  </button>
+{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+  :root {
+    --navy:   #1B2E5E;
+    --border: #8A9BC4;
+    --bg:     #F0F2F7;
+  }
+
+  /* ── Page wrapper ─────────────────────────────────────────── */
+  .cert-page-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 16px 60px;
+    background: transparent;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     CERTIFICATE SHELL
+     860 × 609 px fixed — identical on screen and in print
+  ══════════════════════════════════════════════════════════════ */
+  .cert {
+    position: relative;
+    width:  860px;
+    height: 609px;
+    background: var(--bg);
+    overflow: hidden;
+    box-shadow: 0 10px 48px rgba(0,0,0,.22);
+    flex-shrink: 0;
+  }
+
+  /* ── Double-rule border ───────────────────────────────────── */
+  .cert .b-outer {
+    position: absolute; inset: 14px;
+    border: 1.5px solid var(--border);
+    z-index: 1; pointer-events: none;
+  }
+  .cert .b-inner {
+    position: absolute; inset: 20px;
+    border: .75px solid var(--border);
+    opacity: .5; z-index: 1; pointer-events: none;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     RIBBONS
+     Using SVG polygons placed absolutely – identical every time,
+     no gradient drift between screen and print.
+  ══════════════════════════════════════════════════════════════ */
+  .cert .ribbon-svg {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .cert .ribbon-tr { top: 0; right: 0; width: 200px; height: 200px; }
+  .cert .ribbon-bl { bottom: 0; left: 0; width: 200px; height: 200px; }
+
+  /* ── Filigree ─────────────────────────────────────────────── */
+  .cert .filigree {
+    position: absolute;
+    width: 68px; height: 68px;
+    z-index: 3; pointer-events: none;
+  }
+  .cert .filigree-tl { top: 16px; left: 16px; }
+  .cert .filigree-br { bottom: 16px; right: 16px; transform: rotate(180deg); }
+
+  /* ── Content ──────────────────────────────────────────────── */
+  .cert .content {
+    position: relative; z-index: 5;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    /* Side padding clears ribbons (200px wide) plus breathing room */
+    padding: 36px 220px 32px;
+    gap: 0;
+  }
+
+  /* ── CERTIFICATE title ────────────────────────────────────── */
+  .cert .c-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    /* letter-spacing reduced from .28em → .12em so it fits on one line */
+    font-size: 60px;
+    letter-spacing: .12em;
+    color: var(--navy);
+    line-height: 1;
+    white-space: nowrap;
+    margin-bottom: 5px;
+  }
+
+  /* ── OF ACHIEVEMENT ──────────────────────────────────────── */
+  .cert .c-sub {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .cert .c-sub-line { width: 64px; height: 1.5px; background: var(--navy); }
+  .cert .c-sub-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px; letter-spacing: .22em; color: var(--navy);
+  }
+
+  /* ── Ornament ─────────────────────────────────────────────── */
+  .cert .c-ornament {
+    font-size: 16px; color: var(--navy); opacity: .7;
+    margin-bottom: 8px; letter-spacing: .05em;
+  }
+
+  /* ── "This is to certify that" ───────────────────────────── */
+  .cert .c-certify {
+    font-family: 'EB Garamond', serif;
+    font-style: italic; font-size: 16px;
+    color: #444; margin-bottom: 5px;
+  }
+
+  /* ── Name rule ───────────────────────────────────────────── */
+  .cert .c-nameline {
+    width: 80%; height: 1px;
+    background: var(--border); margin-bottom: 5px;
+  }
+
+  /* ── Recipient name ──────────────────────────────────────── */
+  .cert .c-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-size: 42px;
+    color: var(--navy); line-height: 1.1;
+    margin-bottom: 5px;
+  }
+
+  /* ── Body text ───────────────────────────────────────────── */
+  .cert .c-body {
+    font-family: 'EB Garamond', serif;
+    font-style: italic; font-size: 15px;
+    color: #444; line-height: 1.5; margin-bottom: 20px;
+  }
+
+  /* ── Footer ──────────────────────────────────────────────── */
+  .cert .c-footer {
+    width: 80%; display: flex;
+    justify-content: space-between; align-items: flex-end;
+  }
+  .cert .c-sig {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px; min-width: 130px;
+  }
+  .cert .c-sig-val {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px; font-style: italic;
+    color: var(--navy); min-height: 26px;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .cert .c-sig-val img {
+    max-height: 34px; max-width: 120px; object-fit: contain;
+  }
+  .cert .c-sig-line { width: 130px; height: 1px; background: var(--border); }
+  .cert .c-sig-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 10px; letter-spacing: .2em;
+    color: var(--navy); text-transform: uppercase; margin-top: 2px;
+  }
+
+  /* ── Cert ID watermark ───────────────────────────────────── */
+  .cert .c-id {
+    position: absolute; bottom: 24px; right: 28px;
+    font-family: 'EB Garamond', serif;
+    font-size: 8.5px; letter-spacing: .08em;
+    color: #bcc4d4; z-index: 6;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     PRINT
+     The cert is already fixed-size. Print just hides the navbar,
+     removes body padding, and forces A4 landscape.
+  ══════════════════════════════════════════════════════════════ */
+  @media print {
+    @page { size: A4 landscape; margin: 0; }
+
+    /* Hide everything outside the cert */
+    nav, .cert-page-wrap > *:not(.cert) { display: none !important; }
+
+    body { background: white !important; margin: 0 !important; padding: 0 !important; }
+
+    .cert-page-wrap {
+      padding: 0 !important;
+      display: block !important;
+    }
+
+    .cert {
+      /* Scale to fill the A4 landscape page exactly */
+      width:  100vw  !important;
+      height: 100vh  !important;
+      box-shadow: none !important;
+      position: fixed !important;
+      top: 0 !important; left: 0 !important;
+    }
+
+    /* Scale typography with viewport so proportions stay identical */
+    .cert .c-title   { font-size: 6.3vw  !important; letter-spacing: .12em !important; }
+    .cert .c-name    { font-size: 4.3vw  !important; }
+    .cert .c-body    { font-size: 1.5vw  !important; }
+    .cert .c-certify { font-size: 1.55vw !important; }
+    .cert .c-sub-text{ font-size: 1.05vw !important; }
+    .cert .c-sig-val { font-size: 1.7vw  !important; }
+    .cert .c-sig-label{ font-size: .9vw  !important; }
+    .cert .c-ornament{ font-size: 1.55vw !important; }
+    .cert .c-id      { font-size: .75vw  !important; }
+
+    /* Scale filigree and ribbon SVGs */
+    .cert .filigree  { width: 7vw !important; height: 7vw !important; }
+    .cert .ribbon-tr,
+    .cert .ribbon-bl { width: 20vw !important; height: 20vw !important; }
+
+    /* Scale border insets */
+    .cert .b-outer   { inset: 1.4vw !important; }
+    .cert .b-inner   { inset: 2vw   !important; }
+
+    /* Widen content padding for wider page */
+    .cert .content   { padding: 3.5vh 22vw 3vh !important; }
+
+    /* Footer and name line widths */
+    .cert .c-footer,
+    .cert .c-nameline { width: 80% !important; }
+    .cert .c-sig-line { width: 12vw !important; }
+    .cert .c-sub-line { width: 6vw  !important; }
+  }
+</style>
+
+<!-- Screen hint (hidden on print via nav rule) -->
+<p class="text-center text-sm text-gray-400 pt-5 no-print">
+  Click <strong>🖨 Print / Save PDF</strong> in the navbar to save this certificate.
+</p>
+
+<div class="cert-page-wrap">
+  <div class="cert">
+
+    <!-- Double border -->
+    <div class="b-outer"></div>
+    <div class="b-inner"></div>
+
+    <!-- ══ TOP-RIGHT RIBBON (SVG polygon) ══════════════════════
+         Three navy bands with two white gaps, diagonal cut.
+         Drawn as filled polygons so they render identically
+         on screen and in print — no gradient issues.
+    ═══════════════════════════════════════════════════════════ -->
+    <svg class="ribbon-svg ribbon-tr" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- Band 1 (outermost, widest) -->
+      <polygon points="200,0 0,0 200,200"   fill="#1B2E5E"/>
+      <!-- White gap 1 -->
+      <polygon points="200,0 30,0 200,170"  fill="#F0F2F7"/>
+      <!-- Band 2 (middle) -->
+      <polygon points="200,0 55,0 200,145"  fill="#1B2E5E"/>
+      <!-- White gap 2 -->
+      <polygon points="200,0 75,0 200,125"  fill="#F0F2F7"/>
+      <!-- Band 3 (inner) -->
+      <polygon points="200,0 95,0 200,105"  fill="#1B2E5E"/>
+      <!-- Mask back to bg colour for clean inner edge -->
+      <polygon points="200,0 115,0 200,85"  fill="#F0F2F7"/>
+    </svg>
+
+    <!-- ══ BOTTOM-LEFT RIBBON (mirror of top-right) ════════════ -->
+    <svg class="ribbon-svg ribbon-bl" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="0,200 200,200 0,0"   fill="#1B2E5E"/>
+      <polygon points="0,200 170,200 0,30"  fill="#F0F2F7"/>
+      <polygon points="0,200 145,200 0,55"  fill="#1B2E5E"/>
+      <polygon points="0,200 125,200 0,75"  fill="#F0F2F7"/>
+      <polygon points="0,200 105,200 0,95"  fill="#1B2E5E"/>
+      <polygon points="0,200 85,200 0,115"  fill="#F0F2F7"/>
+    </svg>
+
+    <!-- Filigree ornaments -->
+    <svg class="filigree filigree-tl" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 66 C6 36 12 18 36 12 C18 12 12 6 66 6" stroke="#1B2E5E" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M6 52 C10 30 18 18 42 12" stroke="#1B2E5E" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <path d="M18 66 C22 42 28 26 50 18" stroke="#1B2E5E" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="9"  cy="9"  r="1.8" fill="#1B2E5E"/>
+      <circle cx="14" cy="6"  r="1.1" fill="#1B2E5E"/>
+      <circle cx="6"  cy="14" r="1.1" fill="#1B2E5E"/>
+      <path d="M9 36 Q14 26 22 31 Q17 40 9 36Z"  stroke="#1B2E5E" stroke-width="1" fill="#1B2E5E" fill-opacity=".18"/>
+      <path d="M26 14 Q36 9 34 20 Q26 22 26 14Z" stroke="#1B2E5E" stroke-width="1" fill="#1B2E5E" fill-opacity=".18"/>
+    </svg>
+    <svg class="filigree filigree-br" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 66 C6 36 12 18 36 12 C18 12 12 6 66 6" stroke="#1B2E5E" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M6 52 C10 30 18 18 42 12" stroke="#1B2E5E" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <path d="M18 66 C22 42 28 26 50 18" stroke="#1B2E5E" stroke-width=".9" fill="none" stroke-linecap="round"/>
+      <circle cx="9"  cy="9"  r="1.8" fill="#1B2E5E"/>
+      <circle cx="14" cy="6"  r="1.1" fill="#1B2E5E"/>
+      <circle cx="6"  cy="14" r="1.1" fill="#1B2E5E"/>
+      <path d="M9 36 Q14 26 22 31 Q17 40 9 36Z"  stroke="#1B2E5E" stroke-width="1" fill="#1B2E5E" fill-opacity=".18"/>
+      <path d="M26 14 Q36 9 34 20 Q26 22 26 14Z" stroke="#1B2E5E" stroke-width="1" fill="#1B2E5E" fill-opacity=".18"/>
+    </svg>
+
+    <!-- ── Main content ───────────────────────────────────────── -->
+    <div class="content">
+
+      <div class="c-title">CERTIFICATE</div>
+
+      <div class="c-sub">
+        <div class="c-sub-line"></div>
+        <span class="c-sub-text">OF ACHIEVEMENT</span>
+        <div class="c-sub-line"></div>
+      </div>
+
+      <div class="c-ornament">&#x2014;&#x2666;&#x21;&#x223C;&#x25C7;&#x223C;&#x21;&#x2666;&#x2014;</div>
+
+      <div class="c-certify">This is to certify that</div>
+      <div class="c-nameline"></div>
+      <div class="c-name">{{ user.full_name }}</div>
+
+      <div class="c-body">
+        has successfully completed the required training and assessment<br>
+        for the <em>{{ program.name }}</em> program.
+      </div>
+
+      <div class="c-footer">
+        <div class="c-sig">
+          <div class="c-sig-val">
+            {{ cert.granted_at.strftime('%d %B %Y').lstrip('0') if cert.granted_at else '—' }}
+          </div>
+          <div class="c-sig-line"></div>
+          <div class="c-sig-label">Date</div>
+        </div>
+        <div class="c-sig">
+          <div class="c-sig-val">
+            <img src="{{ url_for('static', filename='images/signature.png') }}"
+                 alt="Signature"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+            <span style="display:none; font-style:italic;">CertEn Admin</span>
+          </div>
+          <div class="c-sig-line"></div>
+          <div class="c-sig-label">Signature</div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+
+    <div class="c-id">CERT-{{ '%04d' % cert.id }}-{{ user.id }}-{{ program.id }}</div>
+
+  </div><!-- /cert -->
+</div><!-- /cert-page-wrap -->
+{% endblock %}
