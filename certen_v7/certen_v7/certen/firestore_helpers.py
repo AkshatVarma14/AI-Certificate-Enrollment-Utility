@@ -1,16 +1,9 @@
 """
 firestore_helpers.py – CertEn Firestore data layer
 ====================================================
-Every function here replaces a SQLAlchemy model query from v6.
-app.py imports from this file instead of models.py.
-
-Collections:
-  users            email, first_name, last_name, dob, is_admin, created_at
-  programs         name, description, mode, created_at
-  enrollments      user_id, program_id, start_date, time_from, time_to, enrolled_at
-  tasks            program_id, serial, name, due_date
-  task_completions user_id, task_id, status ("C" | "NC")
-  certificates     user_id, program_id, status, requested_at, granted_at
+Zero composite indexes required.
+Every multi-field filter or sort is done in Python after
+fetching with a single-field Firestore query.
 """
 
 from firebase_admin import firestore
@@ -18,26 +11,29 @@ from firebase_config import db
 from datetime import datetime, timezone
 
 
-# ── Tiny helper ────────────────────────────────────────────────────
+# ── Tiny helpers ───────────────────────────────────────────────────
+
 def _doc(snapshot):
-    """Convert a Firestore DocumentSnapshot → plain dict with 'id' key."""
+    """DocumentSnapshot → plain dict with 'id' key."""
     if snapshot is None:
         return None
     d = snapshot.to_dict()
     d["id"] = snapshot.id
     return d
 
-
-def _first(query):
-    """Return the first result of a query as a dict, or None."""
-    for snap in query.limit(1).stream():
+def _first_where(collection, field, value):
+    """Single-field equality query, returns first match as dict or None."""
+    for snap in db.collection(collection).where(field, "==", value).limit(1).stream():
         return _doc(snap)
     return None
 
+def _all_where(collection, field, value):
+    """Single-field equality query, returns all matches as list of dicts."""
+    return [_doc(s) for s in db.collection(collection).where(field, "==", value).stream()]
 
-def _all(query):
-    """Return all results of a query as a list of dicts."""
-    return [_doc(s) for s in query.stream()]
+def _all_docs(collection):
+    """Fetch every document in a collection as list of dicts."""
+    return [_doc(s) for s in db.collection(collection).stream()]
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -45,24 +41,18 @@ def _all(query):
 # ══════════════════════════════════════════════════════════════════
 
 def get_user_by_email(email: str):
-    return _first(db.collection("users").where("email", "==", email))
-
+    return _first_where("users", "email", email)
 
 def get_user_by_id(user_id: str):
     snap = db.collection("users").document(user_id).get()
     return _doc(snap) if snap.exists else None
 
-
 def get_all_users(admin=False):
-    """Return all non-admin users (admin=False) or all users (admin=True)."""
-    if admin:
-        return _all(db.collection("users").order_by("first_name"))
-    return _all(
-        db.collection("users")
-        .where("is_admin", "==", False)
-        .order_by("first_name")
-    )
-
+    """Return all non-admin users sorted by first name — no index needed."""
+    all_users = _all_docs("users")
+    if not admin:
+        all_users = [u for u in all_users if not u.get("is_admin", False)]
+    return sorted(all_users, key=lambda u: u.get("first_name", "").lower())
 
 def create_user(first_name, last_name, email, dob="", is_admin=False):
     existing = get_user_by_email(email)
@@ -78,10 +68,8 @@ def create_user(first_name, last_name, email, dob="", is_admin=False):
     })
     return get_user_by_id(ref.id)
 
-
 def user_full_name(u: dict) -> str:
     return f"{u['first_name']} {u['last_name']}"
-
 
 def user_initials(u: dict) -> str:
     return f"{u['first_name'][0]}{u['last_name'][0]}".upper()
@@ -92,13 +80,15 @@ def user_initials(u: dict) -> str:
 # ══════════════════════════════════════════════════════════════════
 
 def get_all_programs():
-    return _all(db.collection("programs").order_by("name"))
-
+    """All programs sorted by name — no index needed."""
+    programs = _all_docs("programs")
+    return sorted(programs, key=lambda p: p.get("name", "").lower())
 
 def get_program_by_id(program_id: str):
+    if not program_id:
+        return None
     snap = db.collection("programs").document(program_id).get()
     return _doc(snap) if snap.exists else None
-
 
 def create_program(name, description="", mode=""):
     ts, ref = db.collection("programs").add({
@@ -115,24 +105,24 @@ def create_program(name, description="", mode=""):
 # ══════════════════════════════════════════════════════════════════
 
 def get_enrollment(user_id: str, program_id: str):
-    return _first(
-        db.collection("enrollments")
-        .where("user_id",    "==", user_id)
-        .where("program_id", "==", program_id)
-    )
-
+    """
+    Fetch by user_id only (single field), then filter by program_id in Python.
+    No composite index needed.
+    """
+    for enr in _all_where("enrollments", "user_id", user_id):
+        if enr.get("program_id") == program_id:
+            return enr
+    return None
 
 def get_user_enrollments(user_id: str):
-    return _all(db.collection("enrollments").where("user_id", "==", user_id))
-
+    return _all_where("enrollments", "user_id", user_id)
 
 def get_program_enrollments(program_id: str):
-    return _all(db.collection("enrollments").where("program_id", "==", program_id))
-
+    return _all_where("enrollments", "program_id", program_id)
 
 def create_enrollment(user_id, program_id, start_date="", time_from="", time_to=""):
     if get_enrollment(user_id, program_id):
-        return None   # duplicate
+        return None  # duplicate
     ts, ref = db.collection("enrollments").add({
         "user_id":     user_id,
         "program_id":  program_id,
@@ -149,17 +139,16 @@ def create_enrollment(user_id, program_id, start_date="", time_from="", time_to=
 # ══════════════════════════════════════════════════════════════════
 
 def get_program_tasks(program_id: str):
-    return _all(
-        db.collection("tasks")
-        .where("program_id", "==", program_id)
-        .order_by("serial")
-    )
-
+    """
+    Fetch by program_id only, then sort by serial in Python.
+    No composite index needed.
+    """
+    tasks = _all_where("tasks", "program_id", program_id)
+    return sorted(tasks, key=lambda t: t.get("serial", 0))
 
 def get_task_by_id(task_id: str):
     snap = db.collection("tasks").document(task_id).get()
     return _doc(snap) if snap.exists else None
-
 
 def create_task(program_id, serial, name, due_date=""):
     ts, ref = db.collection("tasks").add({
@@ -176,31 +165,28 @@ def create_task(program_id, serial, name, due_date=""):
 # ══════════════════════════════════════════════════════════════════
 
 def get_task_status(user_id: str, task_id: str) -> str:
-    doc = _first(
-        db.collection("task_completions")
-        .where("user_id", "==", user_id)
-        .where("task_id", "==", task_id)
-    )
-    return doc["status"] if doc else "NC"
-
+    """
+    Fetch by user_id only, filter by task_id in Python.
+    No composite index needed.
+    """
+    for doc in _all_where("task_completions", "user_id", user_id):
+        if doc.get("task_id") == task_id:
+            return doc.get("status", "NC")
+    return "NC"
 
 def create_task_completion(user_id: str, task_id: str, status="NC"):
-    existing = _first(
-        db.collection("task_completions")
-        .where("user_id", "==", user_id)
-        .where("task_id", "==", task_id)
-    )
-    if existing:
-        return
+    # Check duplicate using single-field query + Python filter
+    for doc in _all_where("task_completions", "user_id", user_id):
+        if doc.get("task_id") == task_id:
+            return  # already exists
     db.collection("task_completions").add({
         "user_id": user_id,
         "task_id": task_id,
         "status":  status,
     })
 
-
 def get_task_rows(user_id: str, program_id: str):
-    """Return list of task dicts with per-user completion status."""
+    """Return task list with per-user status for a given program."""
     tasks = get_program_tasks(program_id)
     rows = []
     for task in tasks:
@@ -212,17 +198,15 @@ def get_task_rows(user_id: str, program_id: str):
         })
     return rows
 
-
 def all_tasks_complete(user_id: str, program_id: str) -> bool:
     tasks = get_program_tasks(program_id)
     if not tasks:
         return False
     return all(get_task_status(user_id, t["id"]) == "C" for t in tasks)
 
-
 def get_all_task_completions():
-    """Used for admin stat card only."""
-    return _all(db.collection("task_completions"))
+    """Used only for the admin stat card count."""
+    return _all_docs("task_completions")
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -230,30 +214,29 @@ def get_all_task_completions():
 # ══════════════════════════════════════════════════════════════════
 
 def get_certificate(user_id: str, program_id: str):
-    return _first(
-        db.collection("certificates")
-        .where("user_id",    "==", user_id)
-        .where("program_id", "==", program_id)
-    )
-
+    """
+    Fetch by user_id only, filter by program_id in Python.
+    No composite index needed.
+    """
+    for doc in _all_where("certificates", "user_id", user_id):
+        if doc.get("program_id") == program_id:
+            return doc
+    return None
 
 def get_granted_certificate(user_id: str, program_id: str):
-    return _first(
-        db.collection("certificates")
-        .where("user_id",    "==", user_id)
-        .where("program_id", "==", program_id)
-        .where("status",     "==", "granted")
-    )
-
+    """Returns the certificate only if status == 'granted'."""
+    cert = get_certificate(user_id, program_id)
+    if cert and cert.get("status") == "granted":
+        return cert
+    return None
 
 def get_certificate_by_id(cert_id: str):
     snap = db.collection("certificates").document(cert_id).get()
     return _doc(snap) if snap.exists else None
 
-
 def count_granted_certificates() -> int:
-    return len(_all(db.collection("certificates").where("status", "==", "granted")))
-
+    """Count granted certs using single-field query — no composite index."""
+    return len(_all_where("certificates", "status", "granted"))
 
 def request_certificate(user_id: str, program_id: str):
     if not get_certificate(user_id, program_id):
@@ -264,7 +247,6 @@ def request_certificate(user_id: str, program_id: str):
             "requested_at": datetime.now(timezone.utc),
             "granted_at":   None,
         })
-
 
 def grant_certificate_db(user_id: str, program_id: str):
     now = datetime.now(timezone.utc)
@@ -285,7 +267,7 @@ def grant_certificate_db(user_id: str, program_id: str):
 
 
 # ══════════════════════════════════════════════════════════════════
-# ENROLLMENT PROGRESS (replaces SQLAlchemy Enrollment.progress)
+# ENROLLMENT PROGRESS
 # ══════════════════════════════════════════════════════════════════
 
 def enrollment_progress(user_id: str, program_id: str) -> int:
