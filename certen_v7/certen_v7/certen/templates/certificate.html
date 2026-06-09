@@ -445,7 +445,7 @@
     </div>
 
     <!-- Certificate ID watermark -->
-    <div class="cert-id">CERT-{{ '%04d' % cert['id'] }}-{{ user['id'] }}-{{ program['id'] }}</div>
+    <div class="cert-id">CERT-{{ cert['id'][:8] | upper }}</div>
 
   </div><!-- /cert -->
 </body>
