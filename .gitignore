@@ -1,1 +1,23 @@
+# ── Secrets — never commit these ──────────────────────────────
+.env
 firebase-credentials.json
+
+# ── Python ─────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# ── OS / Editor junk ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/
+
+# ── User-supplied static assets (not committed; see README) ───
+static/images/CertEn.png
+static/images/signature.png

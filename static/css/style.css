@@ -14,3 +14,6 @@
   height: 4px;
   border-radius: 9999px;
 }
+
+/* Base font — moved from base.html inline <style> block */
+body { font-family: 'DM Sans', sans-serif; }

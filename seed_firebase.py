@@ -12,6 +12,7 @@ as the original SQLite seed.py — but in Firestore.
 from firebase_config import db
 from firebase_admin import firestore
 from datetime import datetime, timezone
+from werkzeug.security import generate_password_hash
 from firestore_helpers import (
     create_user, create_program, create_task,
     create_enrollment, create_task_completion, grant_certificate_db,
@@ -40,11 +41,20 @@ def seed():
         clear_collection(col)
 
     print("\nSeeding users...")
-    admin  = create_user("Admin", "User",  "admin@certen.com",  dob="01/01/1990", is_admin=True)
-    alice  = create_user("Alice", "Smith", "alice@gmail.com",   dob="05/03/1998")
-    bob    = create_user("Bob",   "Jones", "bob@gmail.com",     dob="12/07/1995")
-    carol  = create_user("Carol", "White", "carol@gmail.com",   dob="22/11/2000")
-    david  = create_user("David", "Brown", "david@gmail.com",   dob="30/04/1997")
+    # Generic seeded passwords (bcrypt-hashed) — change these after first login.
+    ADMIN_PASSWORD = "Admin@123"
+    USER_PASSWORD  = "User@123"
+
+    admin  = create_user("Admin", "User",  "admin@certen.com",  dob="01/01/1990", is_admin=True,
+                          password_hash=generate_password_hash(ADMIN_PASSWORD))
+    alice  = create_user("Alice", "Smith", "alice@gmail.com",   dob="05/03/1998",
+                          password_hash=generate_password_hash(USER_PASSWORD))
+    bob    = create_user("Bob",   "Jones", "bob@gmail.com",     dob="12/07/1995",
+                          password_hash=generate_password_hash(USER_PASSWORD))
+    carol  = create_user("Carol", "White", "carol@gmail.com",   dob="22/11/2000",
+                          password_hash=generate_password_hash(USER_PASSWORD))
+    david  = create_user("David", "Brown", "david@gmail.com",   dob="30/04/1997",
+                          password_hash=generate_password_hash(USER_PASSWORD))
     for u in [admin, alice, bob, carol, david]:
         print(f"  ✓ {u['email']}  →  {u['id']}")
 
@@ -127,7 +137,13 @@ def seed():
     print("  ✓ 2 certificates granted")
 
     print("\n✅ Firebase seed complete!")
-    print("   Log in with:  admin@certen.com  |  alice@gmail.com  |  carol@gmail.com  etc.")
+    print("   Log in with:")
+    print(f"     admin@certen.com  /  {ADMIN_PASSWORD}   (Admin)")
+    print(f"     alice@gmail.com   /  {USER_PASSWORD}")
+    print(f"     bob@gmail.com     /  {USER_PASSWORD}")
+    print(f"     carol@gmail.com   /  {USER_PASSWORD}")
+    print(f"     david@gmail.com   /  {USER_PASSWORD}")
+    print("   Change these passwords via 'Forgot Password' after first login.")
 
 
 if __name__ == "__main__":

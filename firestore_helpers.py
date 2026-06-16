@@ -6,6 +6,7 @@ Every multi-field filter or sort is done in Python after
 fetching with a single-field Firestore query.
 """
 
+from werkzeug.security import check_password_hash
 from firebase_admin import firestore
 from firebase_config import db
 from datetime import datetime, timezone
@@ -54,7 +55,7 @@ def get_all_users(admin=False):
         all_users = [u for u in all_users if not u.get("is_admin", False)]
     return sorted(all_users, key=lambda u: u.get("first_name", "").lower())
 
-def create_user(first_name, last_name, email, dob="", is_admin=False):
+def create_user(first_name, last_name, email, dob="", is_admin=False, password_hash=""):
     existing = get_user_by_email(email)
     if existing:
         return existing
@@ -63,8 +64,9 @@ def create_user(first_name, last_name, email, dob="", is_admin=False):
         "last_name":  last_name,
         "email":      email.lower(),
         "dob":        dob,
-        "is_admin":   is_admin,
-        "created_at": firestore.SERVER_TIMESTAMP,
+        "is_admin":       is_admin,
+        "password_hash":  password_hash,
+        "created_at":     firestore.SERVER_TIMESTAMP,
     })
     return get_user_by_id(ref.id)
 
@@ -73,6 +75,20 @@ def user_full_name(u: dict) -> str:
 
 def user_initials(u: dict) -> str:
     return f"{u['first_name'][0]}{u['last_name'][0]}".upper()
+
+def verify_user_password(email: str, password: str):
+    """Return the user dict if email+password match, else None.
+    Accounts with no password_hash set (legacy/seeded) are rejected outright —
+    they must go through the password reset flow before they can sign in."""
+    user = get_user_by_email(email)
+    if not user:
+        return None
+    stored_hash = user.get("password_hash", "")
+    if not stored_hash:            # legacy / seeded account – no password set, reject
+        return None
+    if check_password_hash(stored_hash, password):
+        return user
+    return None
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -90,6 +106,10 @@ def get_program_by_id(program_id: str):
     snap = db.collection("programs").document(program_id).get()
     return _doc(snap) if snap.exists else None
 
+# ── SEED-ONLY ──────────────────────────────────────────────────────
+# create_program is not called by any live route.
+# It is used exclusively by seed_firebase.py to populate Firestore.
+# Do not wire this into an app route without adding auth/validation.
 def create_program(name, description="", mode=""):
     ts, ref = db.collection("programs").add({
         "name":        name,
@@ -150,6 +170,10 @@ def get_task_by_id(task_id: str):
     snap = db.collection("tasks").document(task_id).get()
     return _doc(snap) if snap.exists else None
 
+# ── SEED-ONLY ──────────────────────────────────────────────────────
+# create_task is not called by any live route.
+# It is used exclusively by seed_firebase.py to populate Firestore.
+# Do not wire this into an app route without adding auth/validation.
 def create_task(program_id, serial, name, due_date=""):
     ts, ref = db.collection("tasks").add({
         "program_id": program_id,

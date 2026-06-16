@@ -117,6 +117,7 @@
             {% if tasks_done %}
               <!-- ③ All tasks complete → enabled Apply button -->
               <form action="{{ url_for('apply_certificate') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="program_id" value="{{ selected_program['id'] }}" />
                 <button type="submit"
                         class="bg-primary text-white font-semibold rounded-full px-6 py-2 text-sm
@@ -135,6 +136,7 @@
                 Apply for Certificate
               </button>
               <form id="apply-cert-form" action="{{ url_for('apply_certificate') }}" method="POST" class="hidden">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="program_id" value="{{ selected_program['id'] }}" />
               </form>
             {% endif %}

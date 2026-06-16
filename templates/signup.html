@@ -27,6 +27,7 @@
     <!-- ── 2-column card ──────────────────────────────────────────── -->
     <form id="signup-form" action="{{ url_for('signup_submit') }}" method="POST"
           class="bg-white rounded-2xl shadow-sm border-t-4 border-primary px-8 py-6">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
 
@@ -108,6 +109,7 @@
                             text-gray-600 placeholder-gray-400 focus:outline-none focus:border-primary
                             focus:ring-2 focus:ring-primary/10 transition" />
               <button type="button" tabindex="-1"
+                      aria-label="Toggle password visibility"
                       onclick="togglePw('pw1', this)"
                       class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
                 <svg class="eye-open w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,6 +142,7 @@
                             text-gray-600 placeholder-gray-400 focus:outline-none focus:border-primary
                             focus:ring-2 focus:ring-primary/10 transition" />
               <button type="button" tabindex="-1"
+                      aria-label="Toggle password visibility"
                       onclick="togglePw('pw2', this)"
                       class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
                 <svg class="eye-open w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

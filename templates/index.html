@@ -16,13 +16,15 @@
     </div>
 
     {% if session.get('email') %}
-      {# ── Logged-in: two action buttons ── #}
+      {# ── Logged-in: action buttons (Enroll hidden for admins) ── #}
       <div class="flex flex-col gap-3 w-full">
+        {% if session.get('role') != 'admin' %}
         <a href="{{ url_for('register') }}"
            class="w-full text-center bg-primary text-white font-semibold rounded-full py-3 text-base
                   hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all">
           Enroll in a Program
         </a>
+        {% endif %}
         <a href="{{ url_for('user_dashboard') if session.get('role') != 'admin' else url_for('admin_dashboard') }}"
            class="w-full text-center bg-navy text-white font-semibold rounded-full py-3 text-base
                   hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all">
@@ -36,6 +38,7 @@
       <!-- Step 1: Email -->
       <div id="step-email" class="flex flex-col items-center gap-3 w-full">
         <div class="relative w-full">
+          <label for="email-input" class="sr-only">Email address</label>
           <input
             id="email-input"
             type="email"
@@ -61,6 +64,7 @@
       <!-- Step 2: Password (hidden initially) -->
       <form id="step-password" action="{{ url_for('signin') }}" method="POST"
             class="hidden flex-col items-center gap-3 w-full">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="email" id="email-carry" />
 
         <!-- Email display with Change link -->
@@ -74,6 +78,7 @@
 
         <!-- Password field with eye toggle -->
         <div class="relative w-full">
+          <label for="signin-password" class="sr-only">Password</label>
           <input
             type="password"
             name="password"
@@ -85,6 +90,7 @@
             autocomplete="current-password"
           />
           <button type="button" tabindex="-1"
+                  aria-label="Toggle password visibility"
                   onclick="togglePw('signin-password', this)"
                   class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
             <svg class="eye-open w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
