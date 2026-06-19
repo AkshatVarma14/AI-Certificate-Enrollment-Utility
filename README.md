@@ -73,20 +73,6 @@ your first login. New accounts can also be created directly through the
 
 ---
 
-## Adding Your Images
-
-These two image files are referenced by the templates but are not committed
-to the repo (see `.gitignore`). Drop them into `static/images/`:
-
-| File | Used For |
-|---|---|
-| `CertEn.png` | Navbar logo |
-| `signature.png` | Signature shown on generated certificates |
-
-`CertificateImage.png` (homepage graphic) is already included in this repo.
-
----
-
 ## How It Works
 
 **Signing up / signing in**
