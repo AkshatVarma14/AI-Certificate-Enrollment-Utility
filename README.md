@@ -60,7 +60,6 @@ Then open **http://127.0.0.1:5000**
 ## Test Accounts (created by `seed_firebase.py`)
 
 | Email | Password | Role |
-|---|---|---|
 | admin@certen.com | Admin@123 | Admin |
 | alice@gmail.com | User@123 | User |
 | bob@gmail.com | User@123 | User |
@@ -104,7 +103,7 @@ or the in-page **Print** button to save it as a PDF.
 
 ## Security Notes
 
-- Passwords are hashed with Werkzeug's salted hashing (`generate_password_hash` / `check_password_hash`) — plain SHA-256 and the old "no password set" sign-in bypass have been removed.
+- Passwords are hashed with Werkzeug's salted hashing (`generate_password_hash` / `check_password_hash`).
 - All state-changing forms (sign in, sign up, forgot password, enroll, apply for certificate, grant certificate) are protected by Flask-WTF CSRF tokens.
 - `/admin` and `/admin/grant_certificate` require an authenticated admin session; non-admins are redirected to their own dashboard, and signed-out visitors are redirected to the homepage.
 - `/register` (the enrollment form) requires an authenticated session.
@@ -144,7 +143,6 @@ or the in-page **Print** button to save it as a PDF.
 ## Common Issues
 
 | Problem | Fix |
-|---|---|
 | Site can't be reached | Use `http://127.0.0.1:5000` — not `https://`, and don't drop the `:5000` |
 | `python` not recognised | Reinstall Python and tick "Add Python to PATH" |
 | `pip` not recognised | Use `python -m pip install ...` instead |
